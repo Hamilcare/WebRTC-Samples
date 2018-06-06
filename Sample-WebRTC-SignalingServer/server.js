@@ -16,7 +16,7 @@ wss.on('connection', function(connection) {
 	
    //when server gets a message from a connected user
    connection.on('message', function(message) { 
-	
+      console.log(message);
       var data; 
       //accepting only JSON messages 
       try {
@@ -27,14 +27,15 @@ wss.on('connection', function(connection) {
       } 
 		
       //switching type of the user message 
-      switch (data.type) { 
+      switch (data.type.toLowerCase()) { 
          //when a user tries to login 
 			
          case "login": 
             console.log("User logged", data.name); 
 				
             //if anyone is logged in with this username then refuse 
-            if(users[data.name]) { 
+            if(users[data.name]) {
+	   	console.log(data.name+" already log");
                sendTo(connection, { 
                   type: "login", 
                   success: false 
@@ -48,7 +49,8 @@ wss.on('connection', function(connection) {
                sendTo(connection, { 
                   type: "login", 
                   success: true 
-               }); 
+               });
+	       notifyAll(data.name);
             } 
 				
             break; 
@@ -139,17 +141,30 @@ wss.on('connection', function(connection) {
 				
             if(conn != null) { 
                sendTo(conn, { 
-                  type: "leave" 
+                  type: "leave",
+		  name: connection.name
                });
             }  
          } 
       } 
    });  
 	
-   connection.send("Hello world"); 
+   sendTo(connection,"Hello world"); 
 	
 });  
 
 function sendTo(connection, message) { 
    connection.send(JSON.stringify(message)); 
+}
+
+function notifyAll(newName){
+	console.log(users);
+	for(var conn in users){
+		if(conn != newName){
+			sendTo(users[conn], {
+				type: "new user",
+				name: newName
+			});
+		}
+	}
 }
